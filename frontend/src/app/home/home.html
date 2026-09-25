@@ -1,0 +1,30 @@
+<main class="page">
+  <header class="hero">
+    <h1>GitHub Profile Analyzer</h1>
+    <p class="subtitle">Paste a GitHub profile URL to inspect public activity and repository insights.</p>
+  </header>
+
+  <form class="analyzer-form" (ngSubmit)="analyze()">
+    <label class="field">
+      <span class="field-label">GitHub profile URL</span>
+      <input
+        type="url"
+        name="profileUrl"
+        [ngModel]="profileUrl()"
+        (ngModelChange)="profileUrl.set($event)"
+        placeholder="https://github.com/username"
+        autocomplete="url"
+        inputmode="url"
+      />
+    </label>
+    <button type="submit" class="analyze-btn">Analyze</button>
+  </form>
+
+  <section class="results" aria-labelledby="results-heading">
+    <h2 id="results-heading">Results</h2>
+    <div class="results-empty">
+      <p>No results yet.</p>
+      <p class="hint">Enter a GitHub profile URL and click Analyze.</p>
+    </div>
+  </section>
+</main>
