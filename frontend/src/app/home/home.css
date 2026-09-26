@@ -71,6 +71,16 @@
   box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2);
 }
 
+.field input[aria-invalid='true'] {
+  border-color: #cf222e;
+}
+
+.field input:disabled {
+  background: #f6f8fa;
+  color: #57606a;
+  cursor: not-allowed;
+}
+
 .analyze-btn {
   flex-shrink: 0;
   height: 2.75rem;
@@ -86,8 +96,13 @@
   transition: background 0.15s ease;
 }
 
-.analyze-btn:hover {
+.analyze-btn:hover:not(:disabled) {
   background: #1158c7;
+}
+
+.analyze-btn:disabled {
+  background: #8c959f;
+  cursor: not-allowed;
 }
 
 .analyze-btn:focus-visible {
@@ -122,6 +137,58 @@
   border-radius: 8px;
   background: #f6f8fa;
   color: #57606a;
+}
+
+.results-loading,
+.results-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 140px;
+  padding: 1.5rem 1rem;
+  border-radius: 8px;
+}
+
+.results-loading {
+  gap: 0.75rem;
+  border: 1px dashed #d0d7de;
+  background: #f6f8fa;
+  color: #57606a;
+}
+
+.results-loading p,
+.results-error p {
+  margin: 0;
+}
+
+.results-error {
+  border: 1px solid #ff8182;
+  background: #ffebe9;
+  color: #82071e;
+}
+
+.spinner {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 3px solid #d0d7de;
+  border-top-color: #1f6feb;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    border-top-color: #1f6feb;
+  }
 }
 
 .results-empty p {
