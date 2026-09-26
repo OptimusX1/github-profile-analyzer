@@ -21,4 +21,15 @@ describe('Home', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.results-empty')?.textContent).toContain('No results yet.');
   });
+
+  it('should show a dummy profile card after Analyze', async () => {
+    const fixture = TestBed.createComponent(Home);
+    await fixture.whenStable();
+    fixture.nativeElement.querySelector('.analyze-btn')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.profile-card')?.textContent).toContain('Alex Rivera');
+    expect(compiled.querySelector('.results-empty')).toBeNull();
+  });
 });
