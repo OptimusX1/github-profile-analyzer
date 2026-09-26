@@ -4,7 +4,7 @@
     <p class="subtitle">Paste a GitHub profile URL to inspect public activity and repository insights.</p>
   </header>
 
-  <form class="analyzer-form" (ngSubmit)="analyze()">
+  <form class="analyzer-form" (ngSubmit)="analyze()" novalidate>
     <label class="field">
       <span class="field-label">GitHub profile URL</span>
       <input
@@ -15,16 +15,62 @@
         placeholder="https://github.com/username"
         autocomplete="url"
         inputmode="url"
+        [disabled]="loading()"
+        [attr.aria-invalid]="errorMessage() ? true : null"
+        [attr.aria-describedby]="errorMessage() ? 'profile-url-error' : null"
       />
     </label>
-    <button type="submit" class="analyze-btn">Analyze</button>
+    <button type="submit" class="analyze-btn" [disabled]="loading()">
+      {{ loading() ? 'Analyzing…' : 'Analyze' }}
+    </button>
   </form>
 
-  <section class="results" aria-labelledby="results-heading">
+  <section class="results" aria-labelledby="results-heading" [attr.aria-busy]="loading()">
     <h2 id="results-heading">Results</h2>
-    <div class="results-empty">
-      <p>No results yet.</p>
-      <p class="hint">Enter a GitHub profile URL and click Analyze.</p>
-    </div>
+
+    @if (loading()) {
+      <div class="results-loading" role="status" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <p>Analyzing profile…</p>
+      </div>
+    } @else if (errorMessage(); as message) {
+      <div class="results-error" role="alert">
+        <p id="profile-url-error">{{ message }}</p>
+      </div>
+    } @else if (profile(); as data) {
+      <article class="profile-card">
+        <div class="profile-card__header">
+          <div class="avatar" aria-hidden="true">{{ data.name.charAt(0) }}</div>
+          <div class="identity">
+            <h3>{{ data.name }}</h3>
+            <p class="username">@{{ data.username }}</p>
+          </div>
+        </div>
+        <p class="bio">{{ data.bio }}</p>
+        <ul class="meta">
+          <li>{{ data.company }}</li>
+          <li>{{ data.location }}</li>
+        </ul>
+        <dl class="stats">
+          <div>
+            <dt>Followers</dt>
+            <dd>{{ data.followers }}</dd>
+          </div>
+          <div>
+            <dt>Following</dt>
+            <dd>{{ data.following }}</dd>
+          </div>
+          <div>
+            <dt>Repos</dt>
+            <dd>{{ data.publicRepos }}</dd>
+          </div>
+        </dl>
+      </article>
+    } @else {
+      <div class="results-empty">
+        <p>No results yet.</p>
+        <p class="hint">Enter a GitHub profile URL and click Analyze.</p>
+      </div>
+    }
   </section>
 </main>
