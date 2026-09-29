@@ -37,35 +37,123 @@
       <div class="results-error" role="alert">
         <p id="profile-url-error">{{ message }}</p>
       </div>
-    } @else if (profile(); as data) {
-      <article class="profile-card">
-        <div class="profile-card__header">
-          <div class="avatar" aria-hidden="true">{{ data.name.charAt(0) }}</div>
-          <div class="identity">
-            <h3>{{ data.name }}</h3>
-            <p class="username">@{{ data.username }}</p>
-          </div>
-        </div>
-        <p class="bio">{{ data.bio }}</p>
-        <ul class="meta">
-          <li>{{ data.company }}</li>
-          <li>{{ data.location }}</li>
-        </ul>
-        <dl class="stats">
-          <div>
-            <dt>Followers</dt>
-            <dd>{{ data.followers }}</dd>
-          </div>
-          <div>
-            <dt>Following</dt>
-            <dd>{{ data.following }}</dd>
-          </div>
-          <div>
-            <dt>Repos</dt>
-            <dd>{{ data.publicRepos }}</dd>
-          </div>
-        </dl>
-      </article>
+    } @else if (result(); as data) {
+      <div class="analysis">
+        @if (data.notice) {
+          <p class="hint">{{ data.notice }}</p>
+        }
+        @if (data.profile; as profile) {
+          <article class="profile-card">
+            <div class="profile-card__header">
+              @if (profile.avatarUrl) {
+                <img class="avatar" [src]="profile.avatarUrl" alt="" />
+              } @else {
+                <div class="avatar" aria-hidden="true">{{ initial(profile.name) }}</div>
+              }
+              <div class="identity">
+                <h3>{{ profile.name }}</h3>
+                @if (profile.profileUrl) {
+                  <a class="username" [href]="profile.profileUrl" target="_blank" rel="noopener noreferrer">
+                    @{{ profile.username }}
+                  </a>
+                } @else {
+                  <p class="username">@{{ profile.username }}</p>
+                }
+              </div>
+            </div>
+            @if (profile.bio) {
+              <p class="bio">{{ profile.bio }}</p>
+            }
+            @if (profile.company || profile.location) {
+              <ul class="meta">
+                @if (profile.company) {
+                  <li>{{ profile.company }}</li>
+                }
+                @if (profile.location) {
+                  <li>{{ profile.location }}</li>
+                }
+              </ul>
+            }
+            <dl class="stats">
+              <div>
+                <dt>Followers</dt>
+                <dd>{{ formatStat(profile.followers) }}</dd>
+              </div>
+              <div>
+                <dt>Following</dt>
+                <dd>{{ formatStat(profile.following) }}</dd>
+              </div>
+              <div>
+                <dt>Repos</dt>
+                <dd>{{ formatStat(profile.publicRepos) }}</dd>
+              </div>
+            </dl>
+          </article>
+        }
+
+        @if (data.summary) {
+          <section class="insight" aria-labelledby="summary-heading">
+            <h3 id="summary-heading">Summary</h3>
+            <p class="summary">{{ data.summary }}</p>
+          </section>
+        }
+
+        @if (data.languages.length) {
+          <section class="insight" aria-labelledby="languages-heading">
+            <h3 id="languages-heading">Languages</h3>
+            <ul class="language-list">
+              @for (language of data.languages; track language.name) {
+                <li class="language-row">
+                  <span>{{ language.name }}</span>
+                  <span class="language-track" aria-hidden="true">
+                    <span class="language-fill" [style.width.%]="language.percent"></span>
+                  </span>
+                  <span>{{ language.percent }}%</span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (data.repos.length) {
+          <section class="insight" aria-labelledby="repos-heading">
+            <h3 id="repos-heading">Repository summaries ({{ data.repos.length }})</h3>
+            <p class="hint">What each repository is about, and the languages it uses.</p>
+            <ul class="repo-list">
+              @for (repo of data.repos; track $index) {
+                <li class="repo-item">
+                  @if (repo.url) {
+                    <a [href]="repo.url" target="_blank" rel="noopener noreferrer">{{ repo.name }}</a>
+                  } @else {
+                    <strong>{{ repo.name }}</strong>
+                  }
+                  <p class="repo-summary">
+                    {{ repo.summary || repo.description || 'No summary is available for this repository.' }}
+                  </p>
+                  @if (repo.languages.length || repo.stars !== null) {
+                    <p class="repo-meta">
+                      @for (language of repo.languages; track language.name) {
+                        <span>{{ language.name }} {{ language.percent }}%</span>
+                      }
+                      @if (repo.stars !== null) {
+                        <span>{{ formatStat(repo.stars) }} stars</span>
+                      }
+                    </p>
+                  } @else if (repo.language) {
+                    <p class="repo-meta">
+                      <span>{{ repo.language }}</span>
+                    </p>
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (data.unmatched) {
+          <pre class="raw-response">{{ data.unmatched }}</pre>
+        }
+      </div>
     } @else {
       <div class="results-empty">
         <p>No results yet.</p>

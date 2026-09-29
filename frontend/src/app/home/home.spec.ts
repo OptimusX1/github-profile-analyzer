@@ -1,12 +1,22 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { vi } from 'vitest';
+import { ANALYZE_API_URL } from '../services/github.service';
 import { Home } from './home';
 
 describe('Home', () => {
+  let http: HttpTestingController;
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Home],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    http.verify();
   });
 
   it('should render the application title', async () => {
@@ -47,28 +57,77 @@ describe('Home', () => {
     expect(compiled.querySelector('.profile-card')).toBeNull();
   });
 
-  it('should show a loading state, then a dummy profile card', async () => {
-    vi.useFakeTimers();
-    try {
-      const fixture = TestBed.createComponent(Home);
-      fixture.detectChanges();
-      setProfileUrl(fixture, 'https://github.com/alexrivera');
-      submit(fixture);
+  it('should call the analyzer API and show the response', () => {
+    const fixture = TestBed.createComponent(Home);
+    fixture.detectChanges();
+    setProfileUrl(fixture, 'https://github.com/octocat');
+    submit(fixture);
 
-      const compiled = fixture.nativeElement as HTMLElement;
-      expect(compiled.querySelector('.results-loading')?.textContent).toContain('Analyzing profile');
-      expect(compiled.querySelector('.analyze-btn')?.textContent).toContain('Analyzing');
-      expect(compiled.querySelector('.profile-card')).toBeNull();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.results-loading')?.textContent).toContain('Analyzing profile');
+    expect(compiled.querySelector('.analyze-btn')?.textContent).toContain('Analyzing');
+    expect(compiled.querySelector('.profile-card')).toBeNull();
 
-      await vi.advanceTimersByTimeAsync(700);
-      fixture.detectChanges();
+    const request = http.expectOne(ANALYZE_API_URL);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ userName: 'octocat' });
+    request.flush({
+      profile: {
+        name: 'The Octocat',
+        login: 'octocat',
+        bio: 'GitHub mascot',
+        company: '@github',
+        location: 'San Francisco',
+        followers: 10,
+        following: 2,
+        public_repos: 8,
+        avatar_url: 'https://avatars.githubusercontent.com/u/583231',
+      },
+      repos: [
+        {
+          name: 'Hello-World',
+          description: 'My first repository',
+          html_url: 'https://github.com/octocat/Hello-World',
+          language: 'JavaScript',
+          stargazers_count: 5,
+          summary:
+            'My first repository on GitHub. Written mainly in JavaScript (80%), with Ruby (20%).',
+          languages: { JavaScript: 80, Ruby: 20 },
+        },
+      ],
+      languages: { JavaScript: 80, Ruby: 20 },
+      summary: 'A well-known GitHub mascot.',
+    });
+    fixture.detectChanges();
 
-      expect(compiled.querySelector('.profile-card')?.textContent).toContain('Alex Rivera');
-      expect(compiled.querySelector('.results-loading')).toBeNull();
-      expect(compiled.querySelector('.results-error')).toBeNull();
-    } finally {
-      vi.useRealTimers();
-    }
+    expect(compiled.querySelector('.profile-card')?.textContent).toContain('The Octocat');
+    expect(compiled.querySelector('.profile-card')?.textContent).toContain('@octocat');
+    expect(compiled.querySelector('.summary')?.textContent).toContain('A well-known GitHub mascot.');
+    expect(compiled.querySelector('.repo-summary')?.textContent).toContain(
+      'My first repository on GitHub',
+    );
+    expect(compiled.querySelector('.repo-summary')?.textContent).toContain('JavaScript (80%)');
+    expect(compiled.querySelector('.repo-list')?.textContent).toContain('Hello-World');
+    expect(compiled.querySelector('.language-list')?.textContent).toContain('JavaScript');
+    expect(compiled.querySelector('.results-loading')).toBeNull();
+    expect(compiled.querySelector('.results-error')).toBeNull();
+  });
+
+  it('should show a backend error in the results section', () => {
+    const fixture = TestBed.createComponent(Home);
+    fixture.detectChanges();
+    setProfileUrl(fixture, 'github.com/missing');
+    submit(fixture);
+
+    http.expectOne(ANALYZE_API_URL).flush(
+      { message: 'Profile not found.' },
+      { status: 404, statusText: 'Not Found' },
+    );
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.results-error')?.textContent).toContain('Profile not found.');
+    expect(compiled.querySelector('.profile-card')).toBeNull();
   });
 });
 
