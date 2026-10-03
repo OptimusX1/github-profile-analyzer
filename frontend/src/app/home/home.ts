@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnDestroy, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { AnalysisResult } from '../models/analysis';
+import { AnalysisResult, LanguageView, RepoView } from '../models/analysis';
 import { GithubService } from '../services/github.service';
 
 @Component({
@@ -70,6 +70,53 @@ export class Home implements OnDestroy {
     return value === null ? '—' : new Intl.NumberFormat('en-US').format(value);
   }
 
+  protected languageColor(name: string): string {
+    return LANGUAGE_COLORS[name] ?? '#8b949e';
+  }
+
+  protected languageSummary(languages: LanguageView[]): string {
+    return languages.map((language) => `${language.name} ${language.percent}%`).join(', ');
+  }
+
+  protected languageHint(data: AnalysisResult): string | null {
+    const hasForks = data.repos.some((repo) => repo.fork);
+    if (data.languageScope === 'all') {
+      return 'Includes forks because no original repositories had detected languages.';
+    }
+    if (hasForks) {
+      return 'Counted from original repositories only, so a large fork does not skew this breakdown.';
+    }
+    return null;
+  }
+
+  protected repoGroups(repos: RepoView[]): RepoGroup[] {
+    const originals = repos.filter((repo) => !repo.fork);
+    const forks = repos.filter((repo) => repo.fork);
+    const groups: RepoGroup[] = [];
+
+    if (originals.length) {
+      groups.push({
+        id: 'original-repos-heading',
+        title: `Original repositories (${originals.length})`,
+        hint: "Repositories this account created, not forks of someone else's work.",
+        repos: originals,
+      });
+    }
+
+    if (forks.length) {
+      groups.push({
+        id: 'forks-heading',
+        title: `Forks (${forks.length})`,
+        hint: originals.length
+          ? 'Forked from other accounts. Left out of the language breakdown.'
+          : 'No original repositories were found. These are forks of other accounts.',
+        repos: forks,
+      });
+    }
+
+    return groups;
+  }
+
   private cancelRequest(): void {
     this.request?.unsubscribe();
     this.request = null;
@@ -122,6 +169,52 @@ export class Home implements OnDestroy {
 
     return username;
   }
+}
+const LANGUAGE_COLORS: Record<string, string> = {
+  'Jupyter Notebook': '#DA5B0B',
+  TypeScript: '#3178c6',
+  JavaScript: '#f1e05a',
+  Python: '#3572A5',
+  HTML: '#e34c26',
+  CSS: '#563d7c',
+  SCSS: '#c6538c',
+  Shell: '#89e051',
+  Java: '#b07219',
+  'C++': '#f34b7d',
+  C: '#555555',
+  'C#': '#178600',
+  Go: '#00ADD8',
+  Rust: '#dea584',
+  Ruby: '#701516',
+  PHP: '#4F5D95',
+  Swift: '#F05138',
+  Kotlin: '#A97BFF',
+  Dart: '#00B4AB',
+  Vue: '#41b883',
+  Dockerfile: '#384d54',
+  Makefile: '#427819',
+  Lua: '#6e8cff',
+  Solidity: '#AA6746',
+  PLpgSQL: '#336790',
+  Perl: '#0298c3',
+  R: '#198CE7',
+  Scala: '#c22d40',
+  Haskell: '#5e5086',
+  Elixir: '#6e4a7e',
+  Clojure: '#db5855',
+  PowerShell: '#5ea4e0',
+  'Objective-C': '#438eff',
+  TeX: '#3D6117',
+  Assembly: '#6E4C13',
+  Other: '#6e7681',
+};
+
+
+interface RepoGroup {
+  id: string;
+  title: string;
+  hint: string;
+  repos: RepoView[];
 }
 
 function readErrorMessage(body: unknown): string | null {

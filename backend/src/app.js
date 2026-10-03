@@ -1,5 +1,7 @@
-require("dotenv").config();
+const path = require("path");
 
+// Load environment variables from the .env file
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { summarizeRepos, githubGet, readRateLimit } = require("./repoSummary");
@@ -14,6 +16,7 @@ app.use(express.json());
 app.post("/api/analyze", async (req, res) => {
 
   try {
+    // Extract the GitHub username from the request body
     const userName = req.body.userName;
     console.log(`req: ${JSON.stringify(userName)}`);
 
@@ -52,6 +55,7 @@ app.post("/api/analyze", async (req, res) => {
     res.json({
       ...data,
       languages: summarized.languages,
+      languageScope: summarized.languageScope,
       notice: summarized.notice,
       repos: summarized.repos,
     });
@@ -65,6 +69,7 @@ app.post("/api/analyze", async (req, res) => {
     });
   }
 });
+
 
 
 const PORT = 3000;

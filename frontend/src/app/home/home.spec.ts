@@ -57,10 +57,12 @@ describe('Home', () => {
     expect(compiled.querySelector('.profile-card')).toBeNull();
   });
 
-  it('should call the analyzer API and show the response', () => {
+  it('should call the analyzer API and show the response', async () => {
     const fixture = TestBed.createComponent(Home);
     fixture.detectChanges();
+    await fixture.whenStable();
     setProfileUrl(fixture, 'https://github.com/octocat');
+    await fixture.whenStable();
     submit(fixture);
 
     const compiled = fixture.nativeElement as HTMLElement;
@@ -83,9 +85,11 @@ describe('Home', () => {
         public_repos: 8,
         avatar_url: 'https://avatars.githubusercontent.com/u/583231',
       },
+      languageScope: 'original',
       repos: [
         {
           name: 'Hello-World',
+          fork: false,
           description: 'My first repository',
           html_url: 'https://github.com/octocat/Hello-World',
           language: 'JavaScript',
@@ -94,8 +98,18 @@ describe('Home', () => {
             'My first repository on GitHub. Written mainly in JavaScript (80%), with Ruby (20%).',
           languages: { JavaScript: 80, Ruby: 20 },
         },
+        {
+          name: 'Spoon-Knife',
+          fork: true,
+          description: 'This repo is for demonstration purposes only.',
+          html_url: 'https://github.com/octocat/Spoon-Knife',
+          language: 'HTML',
+          stargazers_count: 1,
+          summary: 'Fork. This repo is for demonstration purposes only. Written in HTML.',
+          languages: { HTML: 100 },
+        },
       ],
-      languages: { JavaScript: 80, Ruby: 20 },
+      languages: { JavaScript: 80, Ruby: 20, Lua: 0 },
       summary: 'A well-known GitHub mascot.',
     });
     fixture.detectChanges();
@@ -108,15 +122,30 @@ describe('Home', () => {
     );
     expect(compiled.querySelector('.repo-summary')?.textContent).toContain('JavaScript (80%)');
     expect(compiled.querySelector('.repo-list')?.textContent).toContain('Hello-World');
+    expect(compiled.querySelector('#original-repos-heading')?.textContent).toContain(
+      'Original repositories (1)',
+    );
+    expect(compiled.querySelector('#forks-heading')?.textContent).toContain('Forks (1)');
+    expect(compiled.querySelector('.badge--original')?.textContent).toContain('Original');
+    expect(compiled.querySelector('.badge--fork')?.textContent).toContain('Fork');
+    expect(compiled.textContent).toContain('Spoon-Knife');
+    expect(compiled.querySelector('.language-hint')?.textContent).toContain(
+      'original repositories only',
+    );
+    expect(compiled.querySelector('.language-bar')).not.toBeNull();
     expect(compiled.querySelector('.language-list')?.textContent).toContain('JavaScript');
+    expect(compiled.querySelector('.language-list')?.textContent).toContain('80%');
+    expect(compiled.querySelector('.language-list')?.textContent).not.toContain('Lua');
     expect(compiled.querySelector('.results-loading')).toBeNull();
     expect(compiled.querySelector('.results-error')).toBeNull();
   });
 
-  it('should show a backend error in the results section', () => {
+  it('should show a backend error in the results section', async () => {
     const fixture = TestBed.createComponent(Home);
     fixture.detectChanges();
+    await fixture.whenStable();
     setProfileUrl(fixture, 'github.com/missing');
+    await fixture.whenStable();
     submit(fixture);
 
     http.expectOne(ANALYZE_API_URL).flush(

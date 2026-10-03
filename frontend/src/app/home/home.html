@@ -101,32 +101,60 @@
         @if (data.languages.length) {
           <section class="insight" aria-labelledby="languages-heading">
             <h3 id="languages-heading">Languages</h3>
+            @if (languageHint(data); as hint) {
+              <p class="hint language-hint">{{ hint }}</p>
+            }
+            <div
+              class="language-bar"
+              role="img"
+              [attr.aria-label]="languageSummary(data.languages)"
+            >
+              @for (language of data.languages; track language.name) {
+                <span
+                  class="language-segment"
+                  [style.flex-grow]="language.percent"
+                  [style.background-color]="languageColor(language.name)"
+                  [attr.title]="language.name + ' ' + language.percent + '%'"
+                ></span>
+              }
+            </div>
             <ul class="language-list">
               @for (language of data.languages; track language.name) {
                 <li class="language-row">
-                  <span>{{ language.name }}</span>
-                  <span class="language-track" aria-hidden="true">
-                    <span class="language-fill" [style.width.%]="language.percent"></span>
-                  </span>
-                  <span>{{ language.percent }}%</span>
+                  <span
+                    class="language-swatch"
+                    [style.background-color]="languageColor(language.name)"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="language-name">{{ language.name }}</span>
+                  <span class="language-percent">{{ language.percent }}%</span>
                 </li>
               }
             </ul>
           </section>
         }
 
-        @if (data.repos.length) {
-          <section class="insight" aria-labelledby="repos-heading">
-            <h3 id="repos-heading">Repository summaries ({{ data.repos.length }})</h3>
-            <p class="hint">What each repository is about, and the languages it uses.</p>
+        @for (group of repoGroups(data.repos); track group.id) {
+          <section class="insight insight-wide" [attr.aria-labelledby]="group.id">
+            <h3 [id]="group.id">{{ group.title }}</h3>
+            <p class="hint">{{ group.hint }}</p>
             <ul class="repo-list">
-              @for (repo of data.repos; track $index) {
-                <li class="repo-item">
-                  @if (repo.url) {
-                    <a [href]="repo.url" target="_blank" rel="noopener noreferrer">{{ repo.name }}</a>
-                  } @else {
-                    <strong>{{ repo.name }}</strong>
-                  }
+              @for (repo of group.repos; track repo.url ?? repo.name) {
+                <li class="repo-item" [class.repo-item--fork]="repo.fork">
+                  <div class="repo-title">
+                    @if (repo.url) {
+                      <a [href]="repo.url" target="_blank" rel="noopener noreferrer">{{ repo.name }}</a>
+                    } @else {
+                      <strong>{{ repo.name }}</strong>
+                    }
+                    <span
+                      class="badge"
+                      [class.badge--fork]="repo.fork"
+                      [class.badge--original]="!repo.fork"
+                    >
+                      {{ repo.fork ? 'Fork' : 'Original' }}
+                    </span>
+                  </div>
                   <p class="repo-summary">
                     {{ repo.summary || repo.description || 'No summary is available for this repository.' }}
                   </p>
