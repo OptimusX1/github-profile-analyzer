@@ -16,7 +16,9 @@ function githubHeaders() {
   return headers;
 }
 
+// Reads the GitHub API rate limit information from the response headers.
 function readRateLimit(response) {
+
   const reset = response.headers.get("x-ratelimit-reset");
   const resetAt = reset ? new Date(Number(reset) * 1000).toISOString() : null;
   return {
@@ -265,6 +267,26 @@ function buildRepoSummary({ description, readmeExcerpt, topics, fork, languages,
   return `${prefix}${about} ${languageSentence(shares)}`;
 }
 
+function addLanguageBytes(totals, languages) {
+  for (const [name, bytes] of Object.entries(languages || {})) {
+    if (typeof bytes === "number" && bytes > 0) {
+      totals[name] = (totals[name] || 0) + bytes;
+    }
+  }
+}
+
+// A large fork can dominate byte counts, so the breakdown uses original
+// repositories unless the account has no original language data at all.
+function chooseLanguageTotals(originalTotals, allTotals, forkCount) {
+  const hasOriginalLanguages = Object.values(originalTotals).some(
+    (bytes) => typeof bytes === "number" && bytes > 0,
+  );
+  if (hasOriginalLanguages || !forkCount) {
+    return { languages: originalTotals, includedForks: false };
+  }
+  return { languages: allTotals, includedForks: true };
+}
+
 async function summarizeRepos(repos, userName) {
   const cacheKey = String(userName || "").toLowerCase();
   const cached = cache.get(cacheKey);
@@ -273,12 +295,19 @@ async function summarizeRepos(repos, userName) {
   }
 
   let rateLimited = false;
-  const languageTotals = {};
+  let forkCount = 0;
+  const originalTotals = {};
+  const allTotals = {};
   const summarized = await mapPool(Array.isArray(repos) ? repos : [], 4, async (repo) => {
     const path = repoPath(repo, userName);
     const description = cleanText(repo.description);
+    const fork = Boolean(repo.fork);
     let languages = {};
     let readmeExcerpt = null;
+
+    if (fork) {
+      forkCount += 1;
+    }
 
     if (!rateLimited) {
       try {
@@ -293,10 +322,9 @@ async function summarizeRepos(repos, userName) {
       }
     }
 
-    for (const [name, bytes] of Object.entries(languages)) {
-      if (typeof bytes === "number" && bytes > 0) {
-        languageTotals[name] = (languageTotals[name] || 0) + bytes;
-      }
+    addLanguageBytes(allTotals, languages);
+    if (!fork) {
+      addLanguageBytes(originalTotals, languages);
     }
 
     const described = describeLanguages(languages, repo.language);
@@ -307,11 +335,12 @@ async function summarizeRepos(repos, userName) {
       language: described.language,
       languagesUsed: described.languagesUsed,
       stargazers_count: repo.stargazers_count,
+      fork,
       summary: buildRepoSummary({
         description: repo.description,
         readmeExcerpt,
         topics: repo.topics,
-        fork: Boolean(repo.fork),
+        fork,
         languages,
         primaryLanguage: repo.language,
       }),
@@ -319,12 +348,26 @@ async function summarizeRepos(repos, userName) {
     };
   });
 
+  const languageChoice = chooseLanguageTotals(originalTotals, allTotals, forkCount);
+  const notices = [];
+  if (rateLimited) {
+    notices.push(
+      "GitHub rate-limited some repository lookups, so those summaries use only the description and primary language.",
+    );
+  }
+  if (languageChoice.includedForks) {
+    notices.push(
+      "Language totals include forks because no original repositories had detected languages.",
+    );
+  }
+
+  summarized.sort((left, right) => Number(left.fork) - Number(right.fork));
+
   const value = {
     repos: summarized,
-    languages: languageTotals,
-    notice: rateLimited
-      ? "GitHub rate-limited some repository lookups, so those summaries use only the description and primary language."
-      : null,
+    languages: languageChoice.languages,
+    languageScope: languageChoice.includedForks ? "all" : "original",
+    notice: notices.join(" ") || null,
   };
   cache.set(cacheKey, { at: Date.now(), value });
   return value;
@@ -335,6 +378,7 @@ module.exports = {
   describeLanguages,
   buildRepoSummary,
   excerptFromReadme,
+  chooseLanguageTotals,
   githubGet,
   readRateLimit,
 };

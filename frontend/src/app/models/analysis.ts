@@ -24,12 +24,14 @@ export interface RepoView {
   stars: number | null;
   summary: string | null;
   languages: LanguageView[];
+  fork: boolean;
 }
 
 export interface AnalysisResult {
   profile: ProfileView | null;
   summary: string | null;
   languages: LanguageView[];
+  languageScope: 'original' | 'all' | null;
   repos: RepoView[];
   notice: string | null;
   unmatched: string | null;
@@ -63,6 +65,7 @@ export function normalizeAnalysis(body: unknown): AnalysisResult {
   const summary = root ? readString(root['summary']) : null;
   const notice = root ? readString(root['notice']) : null;
   const languages = toLanguages(root?.['languages']);
+  const languageScope = root ? readLanguageScope(root['languageScope']) : null;
   const repos = toRepos(root?.['repos'] ?? root?.['repositories']);
   const hasMapped =
     profile !== null || summary !== null || languages.length > 0 || repos.length > 0;
@@ -71,6 +74,7 @@ export function normalizeAnalysis(body: unknown): AnalysisResult {
     profile,
     summary,
     languages,
+    languageScope,
     repos,
     notice,
     unmatched: hasMapped ? null : toPrettyJson(body),
@@ -97,25 +101,41 @@ function toProfile(source: Record<string, unknown> | null): ProfileView | null {
   };
 }
 
+const VISIBLE_LANGUAGES = 8;
+
 function toLanguages(value: unknown): LanguageView[] {
-  const entries = readLanguageEntries(value);
+  const entries = readLanguageEntries(value).sort((left, right) => right.value - left.value);
   if (entries.length === 0) {
     return [];
   }
 
   const total = entries.reduce((sum, entry) => sum + entry.value, 0);
-  const alreadyPercent = total >= 95 && total <= 105;
+  if (total <= 0) {
+    return [];
+  }
 
-  return entries
-    .sort((left, right) => right.value - left.value)
+  const alreadyPercent = total >= 95 && total <= 105;
+  const visible = entries
     .map((entry) => ({
       name: entry.name,
       percent: alreadyPercent
         ? Math.round(entry.value)
-        : total > 0
-          ? Math.round((entry.value / total) * 100)
-          : 0,
-    }));
+        : Math.round((entry.value / total) * 100),
+    }))
+    .filter((language) => language.percent > 0);
+
+  if (visible.length <= VISIBLE_LANGUAGES) {
+    return visible;
+  }
+
+  const top = visible.slice(0, VISIBLE_LANGUAGES - 1);
+  const other = visible
+    .slice(VISIBLE_LANGUAGES - 1)
+    .reduce((sum, language) => sum + language.percent, 0);
+  if (other > 0) {
+    top.push({ name: 'Other', percent: other });
+  }
+  return top;
 }
 
 function readLanguageEntries(value: unknown): { name: string; value: number }[] {
@@ -172,6 +192,7 @@ function toRepos(value: unknown): RepoView[] {
         stars: readNumber(item['stars'] ?? item['stargazers_count'] ?? item['stargazersCount']),
         summary: readString(item['summary']),
         languages: toLanguages(item['languages']),
+        fork: readBoolean(item['fork']),
       },
     ];
   });
@@ -186,6 +207,7 @@ function emptyRepo(name: string): RepoView {
     stars: null,
     summary: null,
     languages: [],
+    fork: false,
   };
 }
 
@@ -203,6 +225,26 @@ function readString(value: unknown): string | null {
 
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function readLanguageScope(value: unknown): 'original' | 'all' | null {
+  return value === 'original' || value === 'all' ? value : null;
+}
+
+function readBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim().toLowerCase() === 'true';
+  }
+
+  return false;
 }
 
 function readNumber(value: unknown): number | null {
