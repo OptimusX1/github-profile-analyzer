@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { AnalysisResult, normalizeAnalysis } from '../models/analysis';
 
-export const ANALYZE_API_URL = 'http://localhost:3000/api/analyze';
+export const ANALYZE_API_URL = 'https://github-profile-analyzer-jnse.onrender.com';
 
 @Injectable({ providedIn: 'root' })
 export class GithubService {
