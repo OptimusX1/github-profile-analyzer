@@ -8,7 +8,8 @@ const { summarizeRepos, githubGet, readRateLimit } = require("./repoSummary");
 const app = express();
 
 app.use(cors({
-  origin: "https://github-profile-analyzer-neon-seven.vercel.app"
+  origin: "https://github-profile-analyzer-re3ma2u11-op-x3.vercel.app"
+  
 }));
 
 app.use(express.json());
