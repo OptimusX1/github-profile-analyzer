@@ -9,7 +9,7 @@ import { GithubService } from '../services/github.service';
   selector: 'app-home',
   imports: [FormsModule],
   templateUrl: './home.html',
-  styleUrl: './home.css',
+  styleUrl: './home.view.css',
 })
 export class Home implements OnDestroy {
   private readonly github = inject(GithubService);
@@ -19,6 +19,17 @@ export class Home implements OnDestroy {
   protected readonly result = signal<AnalysisResult | null>(null);
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly theme = signal<Theme>(readStoredTheme());
+
+  constructor() {
+    this.applyTheme(this.theme());
+  }
+
+  protected toggleTheme(): void {
+    const next = this.theme() === 'dark' ? 'light' : 'dark';
+    this.theme.set(next);
+    this.applyTheme(next);
+  }
 
   protected analyze(): void {
     if (this.loading()) {
@@ -117,6 +128,19 @@ export class Home implements OnDestroy {
     return groups;
   }
 
+  private applyTheme(theme: Theme): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    document.documentElement.dataset['theme'] = theme;
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // Storage can be unavailable in private mode.
+    }
+  }
+
   private cancelRequest(): void {
     this.request?.unsubscribe();
     this.request = null;
@@ -170,15 +194,28 @@ export class Home implements OnDestroy {
     return username;
   }
 }
+
+type Theme = 'dark' | 'light';
+
+const THEME_KEY = 'gpa-theme';
+
+function readStoredTheme(): Theme {
+  if (typeof localStorage === 'undefined') {
+    return 'dark';
+  }
+
+  return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark';
+}
+
 const LANGUAGE_COLORS: Record<string, string> = {
-  'Jupyter Notebook': '#DA5B0B',
-  TypeScript: '#3178c6',
-  JavaScript: '#f1e05a',
-  Python: '#3572A5',
-  HTML: '#e34c26',
-  CSS: '#563d7c',
+  'Jupyter Notebook': '#ff7a18',
+  TypeScript: '#3b82f6',
+  JavaScript: '#eab308',
+  Python: '#5b9fd8',
+  HTML: '#ef4444',
+  CSS: '#8b5cf6',
   SCSS: '#c6538c',
-  Shell: '#89e051',
+  Shell: '#22c55e',
   Java: '#b07219',
   'C++': '#f34b7d',
   C: '#555555',
@@ -192,7 +229,7 @@ const LANGUAGE_COLORS: Record<string, string> = {
   Dart: '#00B4AB',
   Vue: '#41b883',
   Dockerfile: '#384d54',
-  Makefile: '#427819',
+  Makefile: '#8fbc4a',
   Lua: '#6e8cff',
   Solidity: '#AA6746',
   PLpgSQL: '#336790',
