@@ -7,12 +7,26 @@ const cors = require("cors");
 const { summarizeRepos, githubGet, readRateLimit } = require("./repoSummary");
 const app = express();
 
+const FRONTEND_ORIGINS = [
+  "http://localhost:4200",
+  "https://github-profile-analyzer-neon-seven.vercel.app",
+];
+
 app.use(cors({
-  origin: "https://github-profile-analyzer-re3ma2u11-op-x3.vercel.app"
-  
+  origin(origin, callback) {
+    if (!origin || isAllowedOrigin(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error("Not allowed by CORS"));
+  },
 }));
 
 app.use(express.json());
+
+app.get("/", (_req, res) => {
+  res.json({ ok: true, service: "github-profile-analyzer" });
+});
 
 app.post("/api/analyze", async (req, res) => {
 
@@ -73,8 +87,25 @@ app.post("/api/analyze", async (req, res) => {
 
 
 
-const PORT = 3000;
+function isAllowedOrigin(origin) {
+  if (FRONTEND_ORIGINS.includes(origin)) {
+    return true;
+  }
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  try {
+    const url = new URL(origin);
+    return (
+      url.protocol === "https:" &&
+      url.hostname.endsWith(".vercel.app") &&
+      url.hostname.includes("github-profile-analyzer")
+    );
+  } catch {
+    return false;
+  }
+}
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });
