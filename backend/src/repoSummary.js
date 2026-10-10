@@ -1,5 +1,6 @@
 const GITHUB_API = "https://api.github.com";
-const CACHE_MS = 2 * 60 * 1000;
+// 
+const CACHE_MS = 6 * 60 * 60 * 1000;
 const cache = new Map();
 
 function githubHeaders() {
@@ -290,8 +291,10 @@ function chooseLanguageTotals(originalTotals, allTotals, forkCount) {
 async function summarizeRepos(repos, userName) {
   const cacheKey = String(userName || "").toLowerCase();
   const cached = cache.get(cacheKey);
+  // it will 
   if (cached && Date.now() - cached.at < CACHE_MS) {
-    return cached.value;
+
+    return cached.value;  
   }
 
   let rateLimited = false;

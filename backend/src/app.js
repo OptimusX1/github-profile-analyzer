@@ -5,7 +5,11 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { summarizeRepos, githubGet, readRateLimit } = require("./repoSummary");
+const { log } = require("console");
 const app = express();
+const ANALYSIS_CACHE_MS = 6 * 60 * 60 * 1000;
+const MAX_ANALYSIS_CACHE_ENTRIES = 500;
+const analysisCache = new Map();
 
 const FRONTEND_ORIGINS = [
   "http://localhost:4200",
@@ -29,15 +33,24 @@ app.get("/", (_req, res) => {
 });
 
 app.post("/api/analyze", async (req, res) => {
+  // console.log(`Received analyze request for user: ${JSON.stringify(req.body.userName)}`);
 
   try {
     // Extract the GitHub username from the request body
     const userName = req.body.userName;
     console.log(`req: ${JSON.stringify(userName)}`);
 
+    const cachedAnalysis = getCachedAnalysis(userName);
+    if (cachedAnalysis) {
+      console.log(`Analysis cache hit for ${userName}`);
+      return res.json(cachedAnalysis);
+    }
+
+    //first call to get user profile information from GitHub
     const response = await githubGet(
       `https://api.github.com/users/${encodeURIComponent(userName)}`,
     );
+    console.log(`https://api.github.com/users/${encodeURIComponent(userName)}`);   
     console.log("GitHub rate limit:", readRateLimit(response));
 
     if (!response.ok) {
@@ -49,9 +62,11 @@ app.post("/api/analyze", async (req, res) => {
     }
 
     const data = await response.json();
+    //second call to get user repositories from GitHub
     const reposResponse = await githubGet(
       `https://api.github.com/users/${encodeURIComponent(userName)}/repos?per_page=100&sort=updated`,
     );
+    console.log(`https://api.github.com/users/${encodeURIComponent(userName)}/repos?per_page=100&sort=updated`);
 
     if (!reposResponse.ok) {
       const body = await reposResponse.json().catch(() => ({}));
@@ -67,13 +82,15 @@ app.post("/api/analyze", async (req, res) => {
         .join("\n"),
     );
 
-    res.json({
+    const analysis = {
       ...data,
       languages: summarized.languages,
       languageScope: summarized.languageScope,
       notice: summarized.notice,
       repos: summarized.repos,
-    });
+    };
+    setCachedAnalysis(userName, analysis);
+    res.json(analysis);
   } catch (error) {
     console.error("Error fetching data:", error.message);
     const rateLimited = Boolean(error.rateLimited);
@@ -85,6 +102,61 @@ app.post("/api/analyze", async (req, res) => {
   }
 });
 
+
+function getCachedAnalysis(userName) {
+  const key = analysisCacheKey(userName);
+  if (!key) {
+    return null;
+  }
+
+  const cached = analysisCache.get(key);
+  if (!cached) {
+    return null;
+  }
+
+  if (Date.now() >= cached.expiresAt) {
+    analysisCache.delete(key);
+    return null;
+  }
+
+  analysisCache.delete(key);
+  analysisCache.set(key, cached);
+  return cached.analysis;
+}
+
+function setCachedAnalysis(userName, analysis) {
+  const key = analysisCacheKey(userName);
+  if (!key) {
+    return;
+  }
+
+  const now = Date.now();
+  for (const [cachedKey, cached] of analysisCache) {
+    if (now >= cached.expiresAt) {
+      analysisCache.delete(cachedKey);
+    }
+  }
+
+  analysisCache.delete(key);
+  while (analysisCache.size >= MAX_ANALYSIS_CACHE_ENTRIES) {
+    analysisCache.delete(analysisCache.keys().next().value);
+  }
+
+  analysisCache.set(key, {
+    analysis,
+    expiresAt: now + ANALYSIS_CACHE_MS,
+  });
+}
+
+// Helper function to generate a cache key for a given username
+function analysisCacheKey(userName) {
+  if (typeof userName !== "string") {
+    return null;
+  }
+
+  const key = userName.trim().toLowerCase();
+  return key || null;
+}
 
 
 function isAllowedOrigin(origin) {
