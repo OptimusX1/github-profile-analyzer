@@ -344,6 +344,11 @@
   .spinner {
     animation: none;
   }
+
+  .repo-filters::before,
+  .repo-filter-btn {
+    transition: none;
+  }
 }
 
 .analysis {
@@ -608,16 +613,177 @@ a.username:hover {
   margin-top: 0.35rem;
 }
 
-.repo-list {
+.repo-toolbar {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 248px);
-  justify-content: start;
+  grid-template-columns: minmax(11rem, 1fr) minmax(13rem, 1.1fr) auto auto;
+  grid-template-areas: "heading search filters sort";
+  align-items: center;
   gap: 0.75rem;
 }
 
-.repo-item {
+.repo-heading {
+  grid-area: heading;
+  align-items: center;
   min-width: 0;
-  min-height: 11.5rem;
+}
+
+.repo-count {
+  margin: 0.18rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.repo-search {
+  grid-area: search;
+  min-width: 0;
+  height: 2.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--field);
+  color: var(--text-muted);
+}
+
+.repo-search svg {
+  flex: 0 0 1rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+.repo-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.86rem;
+}
+
+.repo-search input::placeholder {
+  color: var(--text-faint);
+}
+
+.repo-filters {
+  position: relative;
+  isolation: isolate;
+  grid-area: filters;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.12rem;
+  padding: 0.2rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+  background: var(--field);
+}
+
+.repo-filters::before {
+  position: absolute;
+  z-index: -1;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  left: 0.2rem;
+  width: calc((100% - 0.64rem) / 3);
+  border: 1px solid rgba(142, 182, 255, 0.45);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), #2563eb);
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.28);
+  content: '';
+  pointer-events: none;
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.repo-filters.filter-original::before {
+  transform: translateX(calc(100% + 0.12rem));
+}
+
+.repo-filters.filter-forks::before {
+  transform: translateX(calc(200% + 0.24rem));
+}
+
+.repo-filter-btn {
+  position: relative;
+  z-index: 1;
+  min-height: 2.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.58rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.76rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.repo-filter-btn.active {
+  color: #ffffff;
+}
+
+.repo-filter-btn:hover:not(.active) {
+  color: var(--text);
+}
+
+.repo-filter-btn:active {
+  transform: scale(0.97);
+}
+
+.repo-filter-btn span {
+  opacity: 0.75;
+  font-size: 0.7rem;
+}
+
+.repo-filter-btn:focus-visible,
+.repo-sort:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.45);
+  outline-offset: 2px;
+}
+
+.repo-sort {
+  grid-area: sort;
+  min-width: 10.5rem;
+  height: 2.65rem;
+  padding: 0 0.65rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.repo-empty {
+  margin: 0;
+  padding: 2rem 1rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.repo-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  max-width: calc(100rem + 4.5rem);
+  margin-inline: auto;
+  gap: 0.75rem 1.125rem;
+}
+
+.repo-item {
+  flex: 0 1 clamp(min(100%, 14rem), calc(20% - 0.9rem), 20rem);
+  min-width: 0;
+  min-height: calc(11.5rem + 1px);
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
@@ -736,6 +902,14 @@ a.username:hover {
     grid-template-columns: 1fr;
   }
 
+  .repo-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "heading heading"
+      "search sort"
+      "filters filters";
+  }
+
   .donut {
     width: 4rem;
     height: 4rem;
@@ -775,6 +949,30 @@ a.username:hover {
   }
 
   .repo-list {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    max-width: 100%;
+  }
+
+  .repo-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "heading"
+      "search"
+      "filters"
+      "sort";
+  }
+
+  .repo-sort {
+    width: 100%;
+  }
+
+  .repo-filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .repo-item {
+    flex-basis: auto;
+    width: 100%;
   }
 }

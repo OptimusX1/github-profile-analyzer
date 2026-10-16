@@ -66,7 +66,7 @@ describe('Home', () => {
     submit(fixture);
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.results-loading')?.textContent).toContain('Analyzing profile');
+    expect(compiled.querySelector('.results-loading')?.textContent).toContain('Analyzing');
     expect(compiled.querySelector('.analyze-btn')?.textContent).toContain('Analyzing');
     expect(compiled.querySelector('.profile-card')).toBeNull();
 
@@ -94,6 +94,7 @@ describe('Home', () => {
           html_url: 'https://github.com/octocat/Hello-World',
           language: 'JavaScript',
           stargazers_count: 5,
+          updated_at: '2025-01-01T00:00:00Z',
           summary:
             'My first repository on GitHub. Written mainly in JavaScript (80%), with Ruby (20%).',
           languages: { JavaScript: 80, Ruby: 20 },
@@ -105,6 +106,7 @@ describe('Home', () => {
           html_url: 'https://github.com/octocat/Spoon-Knife',
           language: 'HTML',
           stargazers_count: 1,
+          updated_at: '2025-02-01T00:00:00Z',
           summary: 'Fork. This repo is for demonstration purposes only. Written in HTML.',
           languages: { HTML: 100 },
         },
@@ -117,15 +119,15 @@ describe('Home', () => {
     expect(compiled.querySelector('.profile-card')?.textContent).toContain('The Octocat');
     expect(compiled.querySelector('.profile-card')?.textContent).toContain('@octocat');
     expect(compiled.querySelector('.summary')?.textContent).toContain('A well-known GitHub mascot.');
-    expect(compiled.querySelector('.repo-summary')?.textContent).toContain(
+    expect(compiled.querySelector('.repo-item .repo-title')?.textContent).toContain('Spoon-Knife');
+    const originalRepo = compiled.querySelector('.repo-item:not(.repo-item--fork)');
+    expect(originalRepo?.querySelector('.repo-summary')?.textContent).toContain(
       'My first repository on GitHub',
     );
-    expect(compiled.querySelector('.repo-summary')?.textContent).toContain('JavaScript (80%)');
+    expect(originalRepo?.querySelector('.repo-summary')?.textContent).toContain('JavaScript (80%)');
     expect(compiled.querySelector('.repo-list')?.textContent).toContain('Hello-World');
-    expect(compiled.querySelector('#original-repos-heading')?.textContent).toContain(
-      'Original repositories (1)',
-    );
-    expect(compiled.querySelector('#forks-heading')?.textContent).toContain('Forks (1)');
+    expect(compiled.querySelector('.repo-count')?.textContent).toContain('2 repositories');
+    expect(compiled.querySelectorAll('.repo-item')).toHaveLength(2);
     expect(compiled.querySelector('.badge--original')?.textContent).toContain('Original');
     expect(compiled.querySelector('.badge--fork')?.textContent).toContain('Fork');
     expect(compiled.textContent).toContain('Spoon-Knife');
@@ -138,6 +140,26 @@ describe('Home', () => {
     expect(compiled.querySelector('.language-list')?.textContent).not.toContain('Lua');
     expect(compiled.querySelector('.results-loading')).toBeNull();
     expect(compiled.querySelector('.results-error')).toBeNull();
+
+    compiled.querySelector<HTMLButtonElement>('[data-repo-filter="original"]')?.click();
+    fixture.detectChanges();
+    expect(compiled.querySelectorAll('.repo-item')).toHaveLength(1);
+    expect(compiled.querySelector('.repo-list')?.textContent).toContain('Hello-World');
+    expect(compiled.querySelector('.repo-list')?.textContent).not.toContain('Spoon-Knife');
+
+    compiled.querySelector<HTMLButtonElement>('[data-repo-filter="forks"]')?.click();
+    fixture.detectChanges();
+    expect(compiled.querySelectorAll('.repo-item')).toHaveLength(1);
+    expect(compiled.querySelector('.repo-list')?.textContent).toContain('Spoon-Knife');
+
+    compiled.querySelector<HTMLButtonElement>('[data-repo-filter="all"]')?.click();
+    const search = compiled.querySelector<HTMLInputElement>('.repo-search input');
+    expect(search).not.toBeNull();
+    search!.value = 'Hello';
+    search!.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(compiled.querySelectorAll('.repo-item')).toHaveLength(1);
+    expect(compiled.querySelector('.repo-list')?.textContent).toContain('Hello-World');
   });
 
   it('should show a backend error in the results section', async () => {

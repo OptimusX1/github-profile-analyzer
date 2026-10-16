@@ -216,9 +216,9 @@
           </section>
         }
 
-        @for (group of repoGroups(data.repos); track group.id) {
-          <section class="insight insight-wide repo-section" [attr.aria-labelledby]="group.id">
-            <header class="section-head">
+        <section class="insight insight-wide repo-section" aria-labelledby="repositories-heading">
+          <header class="repo-toolbar">
+            <div class="section-head repo-heading">
               <span class="section-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v16H7.5A2.5 2.5 0 0 0 5 21.5z" stroke-linejoin="round" />
@@ -226,12 +226,76 @@
                 </svg>
               </span>
               <div>
-                <h3 [id]="group.id">{{ group.title }}</h3>
-                <p class="hint">{{ group.hint }}</p>
+                <h3 id="repositories-heading">Repositories</h3>
+                <p class="repo-count">{{ data.repos.length }} repositories</p>
               </div>
-            </header>
+            </div>
+            <label class="repo-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <circle cx="11" cy="11" r="6.5" />
+                <path d="m16 16 4 4" stroke-linecap="round" />
+              </svg>
+              <input
+                type="search"
+                aria-label="Search repositories"
+                placeholder="Search repositories..."
+                autocomplete="off"
+                [ngModel]="repoSearch()"
+                (ngModelChange)="repoSearch.set($event)"
+              />
+            </label>
+            <div
+              class="repo-filters"
+              [class.filter-original]="repoFilter() === 'original'"
+              [class.filter-forks]="repoFilter() === 'forks'"
+              role="group"
+              aria-label="Filter repositories"
+            >
+              <button
+                type="button"
+                class="repo-filter-btn"
+                [class.active]="repoFilter() === 'all'"
+                [attr.aria-pressed]="repoFilter() === 'all'"
+                data-repo-filter="all"
+                (click)="repoFilter.set('all')"
+              >
+                All <span>{{ repoCount(data.repos, 'all') }}</span>
+              </button>
+              <button
+                type="button"
+                class="repo-filter-btn"
+                [class.active]="repoFilter() === 'original'"
+                [attr.aria-pressed]="repoFilter() === 'original'"
+                data-repo-filter="original"
+                (click)="repoFilter.set('original')"
+              >
+                Original <span>{{ repoCount(data.repos, 'original') }}</span>
+              </button>
+              <button
+                type="button"
+                class="repo-filter-btn"
+                [class.active]="repoFilter() === 'forks'"
+                [attr.aria-pressed]="repoFilter() === 'forks'"
+                data-repo-filter="forks"
+                (click)="repoFilter.set('forks')"
+              >
+                Forks <span>{{ repoCount(data.repos, 'forks') }}</span>
+              </button>
+            </div>
+            <select
+              class="repo-sort"
+              aria-label="Sort repositories"
+              [ngModel]="repoSort()"
+              (ngModelChange)="repoSort.set($event)"
+            >
+              <option value="updated">Recently updated</option>
+              <option value="name">Name</option>
+              <option value="stars">Most stars</option>
+            </select>
+          </header>
+          @if (filteredRepos(data.repos).length) {
             <ul class="repo-list">
-              @for (repo of group.repos; track repo.url ?? repo.name) {
+              @for (repo of filteredRepos(data.repos); track repo.url ?? repo.name) {
                 <li class="repo-item" [class.repo-item--fork]="repo.fork">
                   <div class="repo-title">
                     <span class="repo-mark" aria-hidden="true">
@@ -284,8 +348,10 @@
                 </li>
               }
             </ul>
-          </section>
-        }
+          } @else {
+            <p class="repo-empty">No repositories match this search or filter.</p>
+          }
+        </section>
 
         @if (data.unmatched) {
           <pre class="raw-response">{{ data.unmatched }}</pre>

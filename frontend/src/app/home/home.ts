@@ -20,6 +20,9 @@ export class Home implements OnDestroy {
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly theme = signal<Theme>(readStoredTheme());
+  protected readonly repoSearch = signal('');
+  protected readonly repoFilter = signal<RepoFilter>('all');
+  protected readonly repoSort = signal<RepoSort>('updated');
 
   constructor() {
     this.applyTheme(this.theme());
@@ -100,32 +103,57 @@ export class Home implements OnDestroy {
     return null;
   }
 
-  protected repoGroups(repos: RepoView[]): RepoGroup[] {
-    const originals = repos.filter((repo) => !repo.fork);
-    const forks = repos.filter((repo) => repo.fork);
-    const groups: RepoGroup[] = [];
-
-    if (originals.length) {
-      groups.push({
-        id: 'original-repos-heading',
-        title: `Original repositories (${originals.length})`,
-        hint: "Repositories this account created, not forks of someone else's work.",
-        repos: originals,
-      });
+  protected repoCount(repos: RepoView[], filter: RepoFilter): number {
+    if (filter === 'all') {
+      return repos.length;
     }
 
-    if (forks.length) {
-      groups.push({
-        id: 'forks-heading',
-        title: `Forks (${forks.length})`,
-        hint: originals.length
-          ? 'Forked from other accounts. Left out of the language breakdown.'
-          : 'No original repositories were found. These are forks of other accounts.',
-        repos: forks,
-      });
-    }
+    return repos.filter((repo) => repo.fork === (filter === 'forks')).length;
+  }
 
-    return groups;
+  protected filteredRepos(repos: RepoView[]): RepoView[] {
+    const query = this.repoSearch().trim().toLocaleLowerCase();
+    const filter = this.repoFilter();
+    const sort = this.repoSort();
+
+    return repos
+      .filter((repo) => filter === 'all' || repo.fork === (filter === 'forks'))
+      .filter((repo) => {
+        if (!query) {
+          return true;
+        }
+
+        return [
+          repo.name,
+          repo.description,
+          repo.summary,
+          repo.language,
+          ...repo.languages.map((language) => language.name),
+        ]
+          .filter((value): value is string => Boolean(value))
+          .join(' ')
+          .toLocaleLowerCase()
+          .includes(query);
+      })
+      .sort((left, right) => {
+        if (sort === 'name') {
+          return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
+        }
+
+        if (sort === 'stars') {
+          return (right.stars ?? -1) - (left.stars ?? -1);
+        }
+
+        const leftUpdated = left.updatedAt ? Date.parse(left.updatedAt) : Number.NaN;
+        const rightUpdated = right.updatedAt ? Date.parse(right.updatedAt) : Number.NaN;
+        if (Number.isNaN(leftUpdated)) {
+          return Number.isNaN(rightUpdated) ? 0 : 1;
+        }
+        if (Number.isNaN(rightUpdated)) {
+          return -1;
+        }
+        return rightUpdated - leftUpdated;
+      });
   }
 
   private applyTheme(theme: Theme): void {
@@ -196,6 +224,8 @@ export class Home implements OnDestroy {
 }
 
 type Theme = 'dark' | 'light';
+type RepoFilter = 'all' | 'original' | 'forks';
+type RepoSort = 'updated' | 'name' | 'stars';
 
 const THEME_KEY = 'gpa-theme';
 

@@ -338,6 +338,7 @@ async function summarizeRepos(repos, userName) {
       language: described.language,
       languagesUsed: described.languagesUsed,
       stargazers_count: repo.stargazers_count,
+      updated_at: repo.updated_at,
       fork,
       summary: buildRepoSummary({
         description: repo.description,
