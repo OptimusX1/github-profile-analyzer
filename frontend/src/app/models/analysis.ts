@@ -22,6 +22,7 @@ export interface RepoView {
   url: string | null;
   language: string | null;
   stars: number | null;
+  updatedAt: string | null;
   summary: string | null;
   languages: LanguageView[];
   fork: boolean;
@@ -190,6 +191,7 @@ function toRepos(value: unknown): RepoView[] {
         url: readHttpUrl(item['html_url'] ?? item['htmlUrl'] ?? item['url']),
         language: readString(item['language']),
         stars: readNumber(item['stars'] ?? item['stargazers_count'] ?? item['stargazersCount']),
+        updatedAt: readString(item['updated_at'] ?? item['updatedAt']),
         summary: readString(item['summary']),
         languages: toLanguages(item['languages']),
         fork: readBoolean(item['fork']),
@@ -205,6 +207,7 @@ function emptyRepo(name: string): RepoView {
     url: null,
     language: null,
     stars: null,
+    updatedAt: null,
     summary: null,
     languages: [],
     fork: false,
