@@ -288,6 +288,8 @@ function chooseLanguageTotals(originalTotals, allTotals, forkCount) {
   return { languages: allTotals, includedForks: true };
 }
 
+// The main job starts here, then follow the helpers it uses.
+
 async function summarizeRepos(repos, userName) {
   const cacheKey = String(userName || "").toLowerCase();
   const cached = cache.get(cacheKey);
@@ -301,7 +303,7 @@ async function summarizeRepos(repos, userName) {
   let forkCount = 0;
   const originalTotals = {};
   const allTotals = {};
-  const summarized = await mapPool(Array.isArray(repos) ? repos : [], 4, async (repo) => {
+  const summarized = await mapPool(Array.isArray(repos) ? repos : [], repos.length, async (repo) => {
     const path = repoPath(repo, userName);
     const description = cleanText(repo.description);
     const fork = Boolean(repo.fork);
@@ -316,7 +318,7 @@ async function summarizeRepos(repos, userName) {
       try {
         [languages, readmeExcerpt] = await Promise.all([
           fetchLanguages(path),
-          !description || description.length < 24 ? fetchReadmeExcerpt(path) : Promise.resolve(null),
+          !description || description.length < 15 ? fetchReadmeExcerpt(path) : Promise.resolve(null),
         ]);
       } catch (error) {
         if (error.rateLimited) {
@@ -330,7 +332,8 @@ async function summarizeRepos(repos, userName) {
       addLanguageBytes(originalTotals, languages);
     }
 
-    const described = describeLanguages(languages, repo.language);
+    const described = 
+    describeLanguages(languages, repo.language);
     return {
       name: repo.name,
       description: repo.description,
