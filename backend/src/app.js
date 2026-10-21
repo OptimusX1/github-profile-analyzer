@@ -16,6 +16,22 @@ const FRONTEND_ORIGINS = [
   "https://github-profile-analyzer-neon-seven.vercel.app",
 ];
 
+
+
+app.use((req,res,next)=>{
+ const startedAt = Date.now();
+ console.log(`Incoming request: ${req.method} ${req.url}`);
+
+ res.on("finish", () => {
+   const duration = Date.now() - startedAt;
+   console.log(`Request completed: ${req.method} ${req.url} - ${res.statusCode} (${duration}ms)`);
+ });
+ next();
+});
+
+
+
+// CORS configuration to allow requests from the frontend origins
 app.use(cors({
   origin(origin, callback) {
     if (!origin || isAllowedOrigin(origin)) {
@@ -26,15 +42,24 @@ app.use(cors({
   },
 }));
 
+// Middleware to parse JSON request bodies
 app.use(express.json());
 
-app.get("/", (_req, res) => {
+// console.log(req.body);
+// console.log(req.body.userName);
+
+// Serve static files from the frontend build directory
+app.get("/", (req, res) => {
   res.json({ ok: true, service: "github-profile-analyzer" });
 });
 
+// Endpoint to analyze a GitHub user's profile and repositories
 app.post("/api/analyze", async (req, res) => {
-  // console.log(`Received analyze request for user: ${JSON.stringify(req.body.userName)}`);
+  console.log(`Received analyze request for user: ${typeof req.body}`); //object
+  console.log(`Received analyze request for user: ${JSON.stringify(req.body)}`);
 
+  console.log(`Received analyze request for user: ${JSON.stringify(req.body.userName)}`);
+  
   try {
     // Extract the GitHub username from the request body
     const userName = req.body.userName;
@@ -76,11 +101,11 @@ app.post("/api/analyze", async (req, res) => {
 
     const repos = await reposResponse.json();
     const summarized = await summarizeRepos(repos, userName);
-    console.log(
-      summarized.repos
-        .map((repo) => `${repo.name}: ${(repo.languagesUsed || []).join(", ") || "no language detected"}`)
-        .join("\n"),
-    );
+    // console.log(
+    //   summarized.repos
+    //     .map((repo) => `${repo.name}: ${(repo.languagesUsed || []).join(", ") || "no language detected"}`)
+    //     .join("\n"),
+    // );
 
     const analysis = {
       ...data,
@@ -101,6 +126,13 @@ app.post("/api/analyze", async (req, res) => {
     });
   }
 });
+
+app.put("/api/clear-cache", (req,res)=>{
+  // let {cachedKey}  =  analysisCache
+  // analysisCache.delete(cachedKey);
+  analysisCache.clear();
+  res.json('cache data deleted ');
+})
 
 
 function getCachedAnalysis(userName) {
