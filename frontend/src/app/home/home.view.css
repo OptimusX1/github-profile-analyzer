@@ -230,7 +230,7 @@
   flex-direction: column;
   padding: 1.05rem 1.1rem 1.25rem;
   border: 1px solid var(--line-strong);
-  border-radius: 18px;
+  border-radius: var(--results-radius, 18px);
   background: var(--panel);
   box-shadow: var(--shadow);
   backdrop-filter: blur(16px);
@@ -355,8 +355,8 @@
 .analysis {
   display: grid;
   grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
-  gap: 0.9rem;
-  align-items: stretch;
+  gap: var(--analysis-gap, 0.9rem);
+  align-items: start;
   min-width: 0;
 }
 
@@ -376,14 +376,14 @@
 .summary-card,
 .repo-item {
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--card-radius, 16px);
   background: var(--card);
   box-shadow: 0 10px 28px rgba(31, 71, 132, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.42);
   backdrop-filter: blur(14px);
 }
 
 .profile-card {
-  height: 100%;
+  height: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -491,6 +491,13 @@ a.username:hover {
 .summary-card {
   min-width: 0;
   padding: 0.95rem 1rem 1.05rem;
+}
+
+.languages-card {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .summary-card .summary,
@@ -650,7 +657,7 @@ a.username:hover {
   gap: 0.55rem;
   padding: 0 0.75rem;
   border: 1px solid var(--line-strong);
-  border-radius: 10px;
+  border-radius: var(--control-radius, 10px);
   background: var(--field);
   color: var(--text-muted);
 }
@@ -685,7 +692,7 @@ a.username:hover {
   gap: 0.12rem;
   padding: 0.2rem;
   border: 1px solid var(--line-strong);
-  border-radius: 11px;
+  border-radius: calc(var(--control-radius, 10px) + 1px);
   background: var(--field);
 }
 
@@ -762,7 +769,7 @@ a.username:hover {
   height: 2.65rem;
   padding: 0 0.65rem;
   border: 1px solid var(--line-strong);
-  border-radius: 10px;
+  border-radius: var(--control-radius, 10px);
   background: var(--field);
   color: var(--text);
   font: inherit;

@@ -29,6 +29,10 @@ body {
   --danger-line: #7a3036;
   --danger-text: #ffb4b0;
   --shadow: 0 18px 50px rgba(2, 6, 18, 0.28);
+  --results-radius: 18px;
+  --card-radius: 16px;
+  --control-radius: 10px;
+  --analysis-gap: 0.9rem;
   --glow:
     radial-gradient(ellipse 52% 34% at 74% -8%, rgba(92, 128, 255, 0.34), transparent 62%),
     radial-gradient(ellipse 36% 24% at 16% -4%, rgba(146, 92, 255, 0.16), transparent 60%),
@@ -45,8 +49,8 @@ html[data-theme='light'] {
   --card-solid: rgba(255, 255, 255, 0.88);
   --panel: rgba(255, 255, 255, 0.58);
   --field: rgba(255, 255, 255, 0.58);
-  --line: rgba(81, 124, 190, 0.2);
-  --line-strong: rgba(81, 124, 190, 0.32);
+  --line: rgba(81, 124, 190, 0.24);
+  --line-strong: rgba(81, 124, 190, 0.36);
   --accent: #2878ef;
   --accent-soft: rgba(64, 124, 245, 0.13);
   --link: #1559bd;
@@ -54,6 +58,10 @@ html[data-theme='light'] {
   --danger-line: #f0b4b4;
   --danger-text: #9f1d1d;
   --shadow: 0 18px 45px rgba(53, 91, 148, 0.14);
+  --results-radius: 16px;
+  --card-radius: 14px;
+  --control-radius: 10px;
+  --analysis-gap: 0.85rem;
   --glow:
     radial-gradient(ellipse 46% 34% at 8% 0%, rgba(123, 176, 255, 0.36), transparent 62%),
     radial-gradient(ellipse 44% 32% at 92% 8%, rgba(173, 142, 255, 0.25), transparent 64%),
