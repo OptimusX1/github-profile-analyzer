@@ -354,7 +354,7 @@
 
 .analysis {
   display: grid;
-  grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
+  grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
   gap: var(--analysis-gap, 0.9rem);
   align-items: start;
   min-width: 0;
@@ -493,11 +493,13 @@ a.username:hover {
   padding: 0.95rem 1rem 1.05rem;
 }
 
-.languages-card {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+@media (min-width: 981px) {
+  .languages-card {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
 }
 
 .summary-card .summary,
