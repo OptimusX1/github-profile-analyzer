@@ -318,7 +318,7 @@ async function summarizeRepos(repos, userName) {
       try {
         [languages, readmeExcerpt] = await Promise.all([
           fetchLanguages(path),
-          !description || description.length < 15 ? fetchReadmeExcerpt(path) : Promise.resolve(null),
+          !description || description.length < 14 ? fetchReadmeExcerpt(path) : Promise.resolve(null),
         ]);
       } catch (error) {
         if (error.rateLimited) {
